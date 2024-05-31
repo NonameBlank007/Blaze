@@ -1,55 +1,59 @@
 #!/system/bin/sh
 
-# BlazeBoost Charging Script
-# This script enables BlazeBoost charging and monitors for charging events.
+# BlazeBoost Charging Script for /data/adb/service.d
+# This script enables BlazeBoost charging and monitors for charging events and temperature.
 # Created by Noname_Blank (ZCXCUID)
-# Version: 1.2
-# Build: 31|05|24 7:00AM
+# Version: 1.4
+# Build: 31|05|24 2:10PM
 
-LOG_FILE="/storage/emulated/0/blazeboost.log"
+# Configurable variables
 CHARGE_CURRENT_FILE="/sys/devices/platform/soc/soc:odm/soc:odm:mmi_chrg_manager/power_supply/mmi_chrg_manager/constant_charge_current_max"
-DEFAULT_CURRENT="6000000" # if heating replace 6 with 5
+CHARGER_STATUS_FILE="/sys/class/power_supply/primary_chg/online"
+BATTERY_TEMP_FILE="/sys/class/power_supply/battery/temp"
+NORMAL_CURRENT="3000000"
+TURBO_CURRENT="6000000"
+DEFAULT_CURRENT="$NORMAL_CURRENT"
+TEMP_THRESHOLD=430  # 43°C in deciCelsius
+TEMP_DURATION=20 # seconds
 
-# Function to display the Blaze ASCII Art Logo
-display_logo() {
-    cat << "EOF"
-  +-+-+-+-+
-  |B|l|a|z|e|
-  +-+-+-+-+
-EOF
-}
-
-# Function to log messages
-log_message() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
-}
-
-# Function to enable BlazeBoost charging
-enable_blazeboost_charging() {
+# Function to set charging current based on mode
+set_charging_current() {
+    local current=$1
     if [ -w "$CHARGE_CURRENT_FILE" ]; then
-        echo "$DEFAULT_CURRENT" > "$CHARGE_CURRENT_FILE"
-        log_message "⚡ Blaze Boost ⚡"
-        log_message "**********************************"
-        log_message "Made by Noname_Blank (ZCXCUID)"
-        log_message "**********************************"
-        log_message "BlazeBoost charging enabled."
-        log_message "Version: 1.2"
-        log_message "Build: 31|05|24 7:00AM"
-    else
-        log_message "Error: Cannot write to $CHARGE_CURRENT_FILE"
+        echo "$current" > "$CHARGE_CURRENT_FILE"
     fi
 }
 
-# Function to maintain BlazeBoost charging
+# Function to enable BlazeBoost charging based on mode
+enable_blazeboost_charging() {
+    if [ -w "$CHARGE_CURRENT_FILE" ]; then
+        local mode=$1
+        if [ "$mode" -eq 2 ]; then
+            set_charging_current "$TURBO_CURRENT"
+        else
+            set_charging_current "$NORMAL_CURRENT"
+        fi
+    fi
+}
+
+# Function to maintain BlazeBoost charging based on temperature
 maintain_charging_current() {
     while true; do
         if [ -w "$CHARGE_CURRENT_FILE" ]; then
-            echo "$DEFAULT_CURRENT" > "$CHARGE_CURRENT_FILE"
-            log_message "Maintaining BlazeBoost charging at $DEFAULT_CURRENT mA."
-        else
-            log_message "Error: Cannot write to $CHARGE_CURRENT_FILE"
+            local charger_status=$(cat "$CHARGER_STATUS_FILE")
+            local battery_temp=$(cat "$BATTERY_TEMP_FILE")
+            if [ "$battery_temp" -ge "$TEMP_THRESHOLD" ]; then
+                set_charging_current "$NORMAL_CURRENT"
+                sleep "$TEMP_DURATION"
+            else
+                if [ "$charger_status" -eq 2 ]; then
+                    set_charging_current "$TURBO_CURRENT"
+                else
+                    set_charging_current "$NORMAL_CURRENT"
+                fi
+            fi
         fi
-        sleep 60  # Adjust the interval as needed
+        sleep 10  # Adjust the interval as needed
     done
 }
 
@@ -58,7 +62,8 @@ monitor_charging_events() {
     while true; do
         ueventd --verbose | while read -r event; do
             if echo "$event" | grep -q "POWER_SUPPLY"; then
-                enable_blazeboost_charging
+                local charger_status=$(cat "$CHARGER_STATUS_FILE")
+                enable_blazeboost_charging "$charger_status"
             fi
         done
         sleep 1
@@ -66,13 +71,11 @@ monitor_charging_events() {
 }
 
 # Handle termination signals
-trap "log_message 'Script terminated'; exit 0" SIGINT SIGTERM
-
-# Display the logo
-display_logo
+trap "exit 0" SIGINT SIGTERM
 
 # Initial BlazeBoost charging enable
-enable_blazeboost_charging
+charger_status=$(cat "$CHARGER_STATUS_FILE")
+enable_blazeboost_charging "$charger_status"
 
 # Start monitoring charging events in the background
 monitor_charging_events &
