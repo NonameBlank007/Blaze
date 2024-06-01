@@ -1,11 +1,18 @@
 # Build Status
 ```
-Fast Charge Script
-Type: Script
+Fast Charge Module
+Type: Module
 Support: Motorola G54 5G
-Build Version: 1.4.0
+Build Version: 1.5.0
 ```
 ## Chanagelog
+
+**1.5.0**
+- Convert to module
+- Distribute as GPLV2-only, as before
+- Module install design
+- Intigrate cooldown to maintain charging
+- Remove monitoring and use a eroor_log file to write logs
 
 **1.4.0**
 - Switch to service.d
