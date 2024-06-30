@@ -2,10 +2,19 @@
 ```
 Fast Charge Module
 Type: Module
-Support: Motorola G54 5G
-Build Version: 1.5.0
+Support: Motorola G54 5G, G73 5G
+Build Version: 2.0.0
 ```
 ## Chanagelog
+
+**2.0.0**
+- Support Motorola G73 5G
+- Improve temprature control
+- Introduce ```config.txt``` file
+- Impliment periodic charger status check as loop
+- Support configuration file
+  - To let users change module configuration without modification directly
+- Abort instalation on not supported devices
 
 **1.5.0**
 - Convert to module
