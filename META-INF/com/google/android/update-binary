@@ -14,9 +14,9 @@ mkdir -p $TMPDIR
 ui_print() { echo "$1"; }
 
 require_new_magisk() {
-  ui_print "***********************************"
+  ui_print "*********************************************"
   ui_print " Please install the latest Magisk! "
-  ui_print "***********************************"
+  ui_print "***********************************************"
   exit 1
 }
 
@@ -80,10 +80,8 @@ MODID=`grep_prop id $TMPDIR/module.prop`
 MODPATH=$MODULEROOT/$MODID
 
 print_modname
-
-ui_print "**********************************************"
-#ui_print "Powered by Magisk (@topjohnwu)"
-#ui_print "******************************"
+ui_print " "
+ui_print "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 ##########################################################################################
 # Install
@@ -143,6 +141,7 @@ chmod 755 /data/adb/service.d/BlazeBoost.sh
 
 ui_print "- Setting permissions"
 set_permissions
+ui_print "- Permission set..."
 
 ##########################################################################################
 # Finalizing
@@ -154,4 +153,5 @@ $BOOTMODE || recovery_cleanup
 rm -rf $TMPDIR $MOUNTPATH
 
 ui_print "- Done"
+ui_print "- Now reboot"
 exit 0
