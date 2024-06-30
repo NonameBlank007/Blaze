@@ -1,32 +1,55 @@
 #!/system/bin/sh
 
-# Error log file path
-ERROR_LOGFILE="/storage/emulated/0/error_log.txt"
+# BlazeBoost Charging Script for /data/adb/service.d
+# This script enables BlazeBoost charging and monitors for charging events and temperature.
+# Created by Noname_Blank (ZCXCUID)
+# Version: 2.0
+# Build: 30:06:24 11:30PM
 
-# Function to log errors
-log_error() {
-    echo "$(date +'%Y-%m-%d %H:%M:%S') - Error: $1" >> "$ERROR_LOGFILE"
-}
+# Check Device name
+Device=$(cat /proc/device-tree/mot,model)
+# Determine device to use charging file
+if [ "$Device" == "cancunf" ]; then
+    CHARGE_CURRENT_FILE="/sys/devices/platform/soc/soc:odm/soc:odm:mmi_chrg_manager/power_supply/mmi_chrg_manager/constant_charge_current_max"
+elif [ "$Device" == "devonf" ]; then
+    CHARGE_CURRENT_FILE="/sys/devices/platform/charger/power_supply/mtk-master-charger/constant_charge_current_max"
+else
+    exit 1
+fi
 
-# Configurable variables
-CHARGE_CURRENT_FILE="/sys/devices/platform/soc/soc:odm/soc:odm:mmi_chrg_manager/power_supply/mmi_chrg_manager/constant_charge_current_max"
 CHARGER_STATUS_FILE="/sys/class/power_supply/primary_chg/online"
 BATTERY_TEMP_FILE="/sys/class/power_supply/battery/temp"
-NORMAL_CURRENT="3000000"
-TURBO_CURRENT="5000000"  # turbo current
-TEMP_THRESHOLD=430  # 43°C in deciCelsius
-TEMP_DURATION=30  # Increased cool-down duration
+CONFIG_FILE="/storage/emulated/0/config.txt"
+DEFAULT_NORMAL_CURRENT="3000000"
+DEFAULT_TURBO_CURRENT="6000000"
+DEFAULT_TEMP_THRESHOLD=430
+DEFAULT_TEMP_DURATION=30
+DEFAULT_INTERVAL=15
+
+# Function to load settings from the configuration file
+load_blazeboost_config() {
+    if [ -f "$CONFIG_FILE" ]; then
+        . "$CONFIG_FILE" || return 1
+        NORMAL_CURRENT="${NORMAL_CURRENT:-$DEFAULT_NORMAL_CURRENT}"
+        TURBO_CURRENT="${TURBO_CURRENT:-$DEFAULT_TURBO_CURRENT}"
+        TEMP_THRESHOLD="${TEMP_THRESHOLD:-$DEFAULT_TEMP_THRESHOLD}"
+        TEMP_DURATION="${TEMP_DURATION:-$DEFAULT_TEMP_DURATION}"
+        INTERVAL="${INTERVAL:-$DEFAULT_INTERVAL}"
+    else
+        NORMAL_CURRENT="$DEFAULT_NORMAL_CURRENT"
+        TURBO_CURRENT="$DEFAULT_TURBO_CURRENT"
+        TEMP_THRESHOLD="$DEFAULT_TEMP_THRESHOLD"
+        TEMP_DURATION="$DEFAULT_TEMP_DURATION"
+        INTERVAL="$DEFAULT_INTERVAL"
+    fi
+}
 
 # Function to set charging current based on mode
 set_charging_current() {
     local current=$1
     if [ -w "$CHARGE_CURRENT_FILE" ]; then
-        echo "$current" > "$CHARGE_CURRENT_FILE" || {
-            log_error "Unable to set charging current to $current"
-            return 1
-        }
+        echo "$current" > "$CHARGE_CURRENT_FILE" || return 1
     else
-        log_error "$CHARGE_CURRENT_FILE is not writable"
         return 1
     fi
 }
@@ -40,8 +63,6 @@ enable_blazeboost_charging() {
         else
             set_charging_current "$NORMAL_CURRENT"
         fi
-    else
-        log_error "$CHARGE_CURRENT_FILE is not writable"
     fi
 }
 
@@ -52,8 +73,13 @@ maintain_charging_current() {
     
     while true; do
         if [ -w "$CHARGE_CURRENT_FILE" ]; then
-            local charger_status=$(cat "$CHARGER_STATUS_FILE")
-            local battery_temp=$(cat "$BATTERY_TEMP_FILE")
+            local charger_status=$(cat "$CHARGER_STATUS_FILE" 2>/dev/null)
+            local battery_temp=$(cat "$BATTERY_TEMP_FILE" 2>/dev/null)
+            
+            if [ -z "$charger_status" ] || [ -z "$battery_temp" ]; then
+                sleep "$INTERVAL"
+                continue
+            fi
             
             if [ "$battery_temp" -ge "$TEMP_THRESHOLD" ]; then
                 set_charging_current "$NORMAL_CURRENT"
@@ -68,7 +94,7 @@ maintain_charging_current() {
                     if [ "$elapsed_time" -ge "$TEMP_DURATION" ]; then
                         cooldown=false
                     else
-                        sleep 5  # Short sleep during cooldown period to recheck temperature
+                        sleep "$INTERVAL"  # Short sleep during cooldown period to recheck temperature
                         continue
                     fi
                 fi
@@ -80,7 +106,27 @@ maintain_charging_current() {
                 fi
             fi
         fi
-        sleep 5  # Adjust the interval as needed
+        sleep "$INTERVAL" # Adjust the interval as needed
+    done
+}
+
+# Function to periodically check charger status and reload config if necessary
+check_charger_status() {
+    local previous_status=""
+    
+    while true; do
+        local current_status=$(cat "$CHARGER_STATUS_FILE" 2>/dev/null)
+        if [ -z "$current_status" ]; then
+            sleep 10
+            continue
+        fi
+        
+        if [ "$current_status" != "$previous_status" ]; then
+            previous_status="$current_status"
+            load_blazeboost_config
+            enable_blazeboost_charging "$current_status"
+        fi
+        sleep 10  # Check every 10 seconds, adjust as needed
     done
 }
 
@@ -88,8 +134,14 @@ maintain_charging_current() {
 trap "exit 0" SIGINT SIGTERM
 
 # Initial BlazeBoost charging enable
-charger_status=$(cat "$CHARGER_STATUS_FILE")
+load_blazeboost_config
+charger_status=$(cat "$CHARGER_STATUS_FILE" 2>/dev/null)
 enable_blazeboost_charging "$charger_status"
 
 # Start maintaining charging current in the background
 maintain_charging_current &
+
+# Start checking charger status in the background
+check_charger_status &
+
+# End of script
