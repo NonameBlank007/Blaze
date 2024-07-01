@@ -3,9 +3,12 @@
 Fast Charge Module
 Type: Module
 Support: Motorola G54 5G, G73 5G
-Build Version: 2.0.0
+Build Version: 2.1.0
 ```
 ## Chanagelog
+
+**2.1.0**
+- Add support for non-power Motorola G54 devices
 
 **2.0.0**
 - Support Motorola G73 5G
