@@ -10,7 +10,13 @@
 Device=$(cat /proc/device-tree/mot,model)
 # Determine device to use charging file
 if [ "$Device" == "cancunf" ]; then
-    CHARGE_CURRENT_FILE="/sys/devices/platform/soc/soc:odm/soc:odm:mmi_chrg_manager/power_supply/mmi_chrg_manager/constant_charge_current_max"
+    if [ -f /sys/devices/platform/soc/soc:odm/soc:odm:mmi_chrg_manager/power_supply/mmi_chrg_manager/constant_charge_current_max ]; then
+        CHARGE_CURRENT_FILE="/sys/devices/platform/soc/soc:odm/soc:odm:mmi_chrg_manager/power_supply/mmi_chrg_manager/constant_charge_current_max"
+    elif [ -f /sys/devices/platform/charger/power_supply/mtk-master-charger/constant_charge_current_max ]; then
+        CHARGE_CURRENT_FILE="/sys/devices/platform/charger/power_supply/mtk-master-charger/constant_charge_current_max"
+    else      
+        exit 1
+    fi
 elif [ "$Device" == "devonf" ]; then
     CHARGE_CURRENT_FILE="/sys/devices/platform/charger/power_supply/mtk-master-charger/constant_charge_current_max"
 else
