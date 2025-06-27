@@ -90,7 +90,7 @@ $BOOTMODE && boot_actions || recovery_actions
 ##########################################################################################
 
 # Extract common files
-unzip -oj "$ZIPFILE" module.prop install.sh uninstall.sh 'common/*' 'BlazeBoost.sh' -d $TMPDIR >&2
+unzip -oj "$ZIPFILE" 'module.prop' 'install.sh' 'uninstall.sh' 'action.sh' 'custom.sh' 'common/*' -d $TMPDIR >&2
 
 [ ! -f $TMPDIR/install.sh ] && abort "! Unable to extract zip file!"
 # Load install script
@@ -110,10 +110,6 @@ fi
 MODID=`grep_prop id $TMPDIR/module.prop`
 MODPATH=$MODULEROOT/$MODID
 
-print_modname
-ui_print " "
-ui_print "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
 ##########################################################################################
 # Install
 ##########################################################################################
@@ -122,6 +118,10 @@ ui_print "━━━━━━━━━━━━━━━━━━━━━━━�
 rm -rf $MODPATH 2>/dev/null
 mkdir -p $MODPATH
 
+# print name and set perms and services
+print_modname
+
+# On install copy files 
 on_install
 
 # Remove placeholder
@@ -159,20 +159,14 @@ $POSTFSDATA && cp -af $TMPDIR/post-fs-data.sh $MODPATH/post-fs-data.sh
 # service mode scripts
 $LATESTARTSERVICE && cp -af $TMPDIR/service.sh $MODPATH/service.sh
 
+
 # Handle replace folders
 for TARGET in $REPLACE; do
   mktouch $MODPATH$TARGET/.replace
 done
 
-# Copy the fast_charge.sh to the service.d directory
-ui_print "- Copying BlazeBoost.sh to /data/adb/service.d/"
-mkdir -p /data/adb/service.d
-cp -f $TMPDIR/BlazeBoost.sh /data/adb/service.d/BlazeBoost.sh
-chmod 755 /data/adb/service.d/BlazeBoost.sh
-
-ui_print "- Setting permissions"
+# Set permissions
 set_permissions
-ui_print "- Permission set..."
 
 ##########################################################################################
 # Finalizing
@@ -183,6 +177,4 @@ imageless_magisk || unmount_magisk_img
 $BOOTMODE || recovery_cleanup
 rm -rf $TMPDIR $MOUNTPATH
 
-ui_print "- Done"
-ui_print "- Now reboot"
 exit 0
