@@ -2,22 +2,21 @@
 
 # BlazeBoost Charging Script for /data/adb/service.d
 # This script enables BlazeBoost charging and monitors for charging events and temperature.
-# Created by Noname_Blank (ZCXCUID)
-# Version: 2.0
-# Build: 30:06:24 11:30PM
+# Created by Noname_Blank
+# Version: 2.2.0
+# Build: 27:06:2025 10:15PM
 
 # Check Device name
 Device=$(cat /proc/device-tree/mot,model)
-# Determine device to use charging file
-if [ "$Device" == "cancunf" ]; then
+if [ "$Device" = "cancunf" ]; then
     if [ -f /sys/devices/platform/soc/soc:odm/soc:odm:mmi_chrg_manager/power_supply/mmi_chrg_manager/constant_charge_current_max ]; then
         CHARGE_CURRENT_FILE="/sys/devices/platform/soc/soc:odm/soc:odm:mmi_chrg_manager/power_supply/mmi_chrg_manager/constant_charge_current_max"
     elif [ -f /sys/devices/platform/charger/power_supply/mtk-master-charger/constant_charge_current_max ]; then
         CHARGE_CURRENT_FILE="/sys/devices/platform/charger/power_supply/mtk-master-charger/constant_charge_current_max"
-    else      
+    else
         exit 1
     fi
-elif [ "$Device" == "devonf" ]; then
+elif [ "$Device" = "devonf" ]; then
     CHARGE_CURRENT_FILE="/sys/devices/platform/charger/power_supply/mtk-master-charger/constant_charge_current_max"
 else
     exit 1
