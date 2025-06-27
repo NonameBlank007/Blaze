@@ -3,6 +3,8 @@
 # Magisk Module Installer Script
 #
 ##########################################################################################
+# for debugging
+# set -x
 ##########################################################################################
 #
 # Instructions:
@@ -24,13 +26,13 @@
 SKIPMOUNT=false
 
 # Set to true if you need to load system.prop
-PROPFILE=true
+PROPFILE=false
 
 # Set to true if you need post-fs-data script
 POSTFSDATA=false
 
 # Set to true if you need late_start service script
-LATESTARTSERVICE=true
+LATESTARTSERVICE=false
 
 ##########################################################################################
 # Replace list
@@ -41,16 +43,16 @@ LATESTARTSERVICE=true
 
 # Construct your list in the following format
 # This is an example
-REPLACE_EXAMPLE="
-/system/app/Youtube
-/system/priv-app/SystemUI
-/system/priv-app/Settings
-/system/framework
-"
+# REPLACE_EXAMPLE="
+# /system/app/Youtube
+# /system/priv-app/SystemUI
+# /system/priv-app/Settings
+# /system/framework
+# "
 
 # Construct your own list here
-REPLACE="
-"
+# REPLACE="
+# "
 
 ##########################################################################################
 #
@@ -118,38 +120,105 @@ REPLACE="
 # Enable boot scripts by setting the flags in the config section above.
 ##########################################################################################
 
-# Set what you want to display when installing your module
-
-
-print_modname() {
-  ui_print " "
-  ui_print "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  ui_print "      ██████╗ ██╗        █████╗  ███████╗███████╗"
-  ui_print "      ██╔══██╗██║      ██╔══██╗ ╚══███╔╝██╔════╝"
-  ui_print "      ██████╔╝██║      ███████║   ███╔╝ █████╗"
-  ui_print "      ██████╔╝██║      ███████║  ███╔╝  █████╗"
-  ui_print "      ██╔══██╗██║      ██╔══██║ ███╔╝   ██╔══╝"
-  ui_print "      ██████╔╝███████╗██║   ██║███████╗███████╗"
-  ui_print "      ╚═════╝ ╚══════╝╚═╝   ╚═╝╚══════╝╚══════╝"
-  ui_print "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  ui_print " "
-  ui_print "               Made by @Noname_Blank (ZCxCUID)"
-  ui_print " "
-  sleep 1
-  ui_print "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  ui_print "                 🚀 Turbo Charge Script 🚀"
-  ui_print "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  sleep 1
+# Set what you want to do when installing your module
+on_install(){
+  # Magisk
+  if [ -d /data/adb ]; then
+      mkdir -p /data/adb/service.d
+      cp -af $TMPDIR/BlazeBoost.sh /data/adb/service.d/BlazeBoost.sh
+      cp -af $TMPDIR/action.sh $MODPATH/action.sh 
+      cp -af $TMPDIR/custom.sh $MODPATH/custom.sh
+  fi
 }
-# Copy/extract your module files into $MODPATH in on_install.
 
+# print modname if magisk
+mod_magisk(){
+    ui_print "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    ui_print "    ██████╗ ██╗        █████╗  ███████╗███████╗"
+    ui_print "    ██╔══██╗██║      ██╔══██╗ ╚══███╔╝██╔════╝"
+    ui_print "    ██████╔╝██║      ███████║   ███╔╝ █████╗"
+    ui_print "    ██████╔╝██║      ███████║  ███╔╝  █████╗"
+    ui_print "    ██╔══██╗██║      ██╔══██║ ███╔╝   ██╔══╝"
+    ui_print "    ██████╔╝███████╗██║   ██║███████╗███████╗"
+    ui_print "    ╚═════╝ ╚══════╝╚═╝   ╚═╝╚══════╝╚══════╝"
+    ui_print "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    ui_print " "
+    sleep 1
+    ui_print "                Made by @Noname_Blank"
+    ui_print " "
+    ui_print "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    ui_print "             🚀 Turbo Charge Script 🚀"
+    ui_print "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    sleep 0.5
+}
+
+# print modname if ksu
+mod_ksu(){
+    ui_print " "
+    ui_print "     +-+-+-+-+-+"
+    ui_print "     |B|l|a|z|e|"
+    ui_print " +-+-+-+-+-+-+-+-+-+-+-+"
+    ui_print " |K|S|U| |E|d|i|t|i|o|n|"
+    ui_print " +-+-+-+ +-+-+-+-+-+-+-+"
+    ui_print " "
+    ui_print "  Turbo Charge Script"
+    sleep 0.5
+    ui_print " Made by @Noname_Blank"
+}
+
+# Set what you want to display when installing your module
+print_modname() {
+  # Supported devices
+  supported_devices="cancunf devonf"
+  device_supported=false
+  device_ksu=false
+
+  # Get the current device name
+  device=$(getprop ro.product.device)
+
+  # Check for ksu
+  if [ -d /data/adb/ksu ]; then
+    device_ksu=true
+  fi
+
+  # Device not supported, abort installation
+  for supported_device in $supported_devices; do
+    if [ "$supported_device" = "$device" ]; then
+        ui_print "- Device '$device' is supported."
+        if [ "$device_ksu" = true ]; then
+            mod_ksu
+        else
+            mod_magisk
+        fi
+        device_supported=true
+        break
+    fi
+  done
+
+  # check for device support
+  if [ "$device_supported" = false ]; then
+    ui_print "- Device '$device' is not supported."
+    ui_print "! This Magisk module is not compatible with your device."
+    exit 1
+  fi
+}
+
+# Copy/extract your module files into $MODPATH in on_install.
 # Only some special files require specific permissions
 # This function will be called after on_install is done
 # The default permissions should be good enough for most cases
 set_permissions() {
+
   # The following is the default rule, DO NOT remove
   set_perm_recursive $MODPATH 0 2000 0755 0644
-  set_perm /data/adb/service.d/BlazeBoost 0 0 0755
+
+  # Magisk
+  if [ -d /data/adb ]; then
+      set_perm /data/adb/service.d/BlazeBoost.sh 0 0 0755
+  fi
+
+  sleep 1
+  ui_print "- Permission set..."
   # Here are some examples:
   # set_perm_recursive  $MODPATH/system/lib       0     0       0755      0644
   # set_perm  $MODPATH/system/bin/app_process32   0     2000    0755      u:object_r:zygote_exec:s0

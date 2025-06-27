@@ -26,30 +26,6 @@ imageless_magisk() {
 }
 
 ##########################################################################################
-# Device Compatibility Check
-##########################################################################################
-
-# Supported devices
-supported_devices="cancunf devonf"
-
-# Function to check if the current device is supported
-check_device_compatibility() {
-    # Get the current device name
-    device=$(getprop ro.product.device)
-
-    # Check if the current device is in the list of supported devices
-    for supported_device in $supported_devices; do
-        if [ "$device" = "$supported_device" ]; then
-            ui_print "- Device '$device' is supported."
-            return 0  # Device is supported
-        fi
-    done
-
-    # Device not supported, abort installation
-    return 1
-}
-
-##########################################################################################
 # Environment
 ##########################################################################################
 
@@ -66,12 +42,6 @@ else
   require_new_magisk
 fi
 
-# Check device compatibility before proceeding
-check_device_compatibility || {
-    ui_print "! This Magisk module is not compatible with your device."
-    ui_print "! Aborting installation."
-    exit 1
-}
 
 # Preparation for flashable zips
 setup_flashable
