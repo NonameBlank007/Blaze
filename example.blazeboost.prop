@@ -1,0 +1,6 @@
+NORMAL_CURRENT="3000000" // Minimum charge 11w+, don't change unless need to
+TURBO_CURRENT="5000000" // release set to 20w+ for less heat, you can change that 50 to 55 for 22.5w+ and 50 -> 60 for 25w+ (less stable overall)
+TEMP_THRESHOLD=430 // Max temp in degree celsius until cooldown, temp multiplied by 10, 43 = 430
+TEMP_DURATION=30 // Cooldown time after temp increase in seconds, if you are changing keep easily divisible nums for this and INTERVAL, e.g INTERVAL: 15 TEMP_DURATTION: 30, 20 : 40,  15 : 45 etc.
+INTERVAL=15 // Background check every 15 sec for temperature status 
+MODE="default" // Do not change manually
