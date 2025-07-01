@@ -3,10 +3,24 @@
 # BlazeBoost Charging Script for /data/adb/service.d
 # This script enables BlazeBoost charging and monitors for charging events and temperature.
 # Created by Noname_Blank
-# Version: 2.2.0
-# Build: 27:06:2025 10:15PM
+# Version: 2.2.5
+# Build: 01:07:2025 10:15PM
 
-# Check Device name
+# Lock file management
+LOCK_FILE="/data/adb/blazeboost.lock"
+if [ -f "$LOCK_FILE" ]; then
+    pid=$(cat "$LOCK_FILE")
+    if [ -d "/proc/$pid" ]; then
+        echo "BlazeBoost is already running (PID $pid)"
+        exit 0
+    else
+        rm -f "$LOCK_FILE"
+    fi
+fi
+echo $$ > "$LOCK_FILE"
+trap 'rm -f "$LOCK_FILE"; exit 0' EXIT TERM
+
+# Device configuration
 Device=$(cat /proc/device-tree/mot,model)
 if [ "$Device" = "cancunf" ]; then
     if [ -f /sys/devices/platform/soc/soc:odm/soc:odm:mmi_chrg_manager/power_supply/mmi_chrg_manager/constant_charge_current_max ]; then
@@ -22,48 +36,52 @@ else
     exit 1
 fi
 
+# File paths
 CHARGER_STATUS_FILE="/sys/class/power_supply/primary_chg/online"
 BATTERY_TEMP_FILE="/sys/class/power_supply/battery/temp"
-CONFIG_FILE="/storage/emulated/0/config.txt"
+CONFIG_FILE="/storage/emulated/0/blazeboost.prop"
+
+# Default values
 DEFAULT_NORMAL_CURRENT="3000000"
-DEFAULT_TURBO_CURRENT="6000000"
+DEFAULT_TURBO_CURRENT="5000000"
 DEFAULT_TEMP_THRESHOLD=430
 DEFAULT_TEMP_DURATION=30
 DEFAULT_INTERVAL=15
+DEFAULT_MODE="default"
 
-# Function to load settings from the configuration file
+# Load configuration
 load_blazeboost_config() {
-    if [ -f "$CONFIG_FILE" ]; then
-        . "$CONFIG_FILE" || return 1
-        NORMAL_CURRENT="${NORMAL_CURRENT:-$DEFAULT_NORMAL_CURRENT}"
-        TURBO_CURRENT="${TURBO_CURRENT:-$DEFAULT_TURBO_CURRENT}"
-        TEMP_THRESHOLD="${TEMP_THRESHOLD:-$DEFAULT_TEMP_THRESHOLD}"
-        TEMP_DURATION="${TEMP_DURATION:-$DEFAULT_TEMP_DURATION}"
-        INTERVAL="${INTERVAL:-$DEFAULT_INTERVAL}"
-    else
-        NORMAL_CURRENT="$DEFAULT_NORMAL_CURRENT"
-        TURBO_CURRENT="$DEFAULT_TURBO_CURRENT"
-        TEMP_THRESHOLD="$DEFAULT_TEMP_THRESHOLD"
-        TEMP_DURATION="$DEFAULT_TEMP_DURATION"
-        INTERVAL="$DEFAULT_INTERVAL"
+    if [ ! -f "$CONFIG_FILE" ]; then
+        echo "NORMAL_CURRENT=\"$DEFAULT_NORMAL_CURRENT\"" > "$CONFIG_FILE"
+        echo "TURBO_CURRENT=\"$DEFAULT_TURBO_CURRENT\"" >> "$CONFIG_FILE"
+        echo "TEMP_THRESHOLD=$DEFAULT_TEMP_THRESHOLD" >> "$CONFIG_FILE"
+        echo "TEMP_DURATION=$DEFAULT_TEMP_DURATION" >> "$CONFIG_FILE"
+        echo "INTERVAL=$DEFAULT_INTERVAL" >> "$CONFIG_FILE"
+        echo "MODE=\"$DEFAULT_MODE\"" >> "$CONFIG_FILE"
+        chmod 0666 "$CONFIG_FILE"
     fi
+    
+    . "$CONFIG_FILE"
+    NORMAL_CURRENT="${NORMAL_CURRENT:-$DEFAULT_NORMAL_CURRENT}"
+    TURBO_CURRENT="${TURBO_CURRENT:-$DEFAULT_TURBO_CURRENT}"
+    TEMP_THRESHOLD="${TEMP_THRESHOLD:-$DEFAULT_TEMP_THRESHOLD}"
+    TEMP_DURATION="${TEMP_DURATION:-$DEFAULT_TEMP_DURATION}"
+    INTERVAL="${INTERVAL:-$DEFAULT_INTERVAL}"
+    MODE="${MODE:-$DEFAULT_MODE}"
 }
 
-# Function to set charging current based on mode
+# Set charging current
 set_charging_current() {
-    local current=$1
-    if [ -w "$CHARGE_CURRENT_FILE" ]; then
-        echo "$current" > "$CHARGE_CURRENT_FILE" || return 1
-    else
-        return 1
-    fi
+    echo "$1" > "$CHARGE_CURRENT_FILE" 2>/dev/null
 }
 
-# Function to enable BlazeBoost charging based on mode
-enable_blazeboost_charging() {
-    if [ -w "$CHARGE_CURRENT_FILE" ]; then
-        local mode=$1
-        if [ "$mode" -eq 2 ]; then
+# Set current based on mode
+set_current_based_on_mode() {
+    status=$1
+    if [ "$MODE" = "night" ]; then
+        set_charging_current "$NORMAL_CURRENT"
+    else
+        if [ "$status" -eq 2 ]; then
             set_charging_current "$TURBO_CURRENT"
         else
             set_charging_current "$NORMAL_CURRENT"
@@ -71,82 +89,46 @@ enable_blazeboost_charging() {
     fi
 }
 
-# Function to maintain BlazeBoost charging based on temperature
-maintain_charging_current() {
-    local cooldown=false
-    local cooldown_start=0
+# Main charging loop
+maintain_charging() {
+    cooldown="false"
+    cooldown_start=0
     
     while true; do
-        if [ -w "$CHARGE_CURRENT_FILE" ]; then
-            local charger_status=$(cat "$CHARGER_STATUS_FILE" 2>/dev/null)
-            local battery_temp=$(cat "$BATTERY_TEMP_FILE" 2>/dev/null)
-            
-            if [ -z "$charger_status" ] || [ -z "$battery_temp" ]; then
-                sleep "$INTERVAL"
-                continue
-            fi
-            
-            if [ "$battery_temp" -ge "$TEMP_THRESHOLD" ]; then
-                set_charging_current "$NORMAL_CURRENT"
-                cooldown=true
-                cooldown_start=$(date +%s)
-                sleep "$TEMP_DURATION"
-            else
-                if [ "$cooldown" = true ]; then
-                    local current_time=$(date +%s)
-                    local elapsed_time=$((current_time - cooldown_start))
-                    
-                    if [ "$elapsed_time" -ge "$TEMP_DURATION" ]; then
-                        cooldown=false
-                    else
-                        sleep "$INTERVAL"  # Short sleep during cooldown period to recheck temperature
-                        continue
-                    fi
-                fi
-
-                if [ "$charger_status" -eq 2 ]; then
-                    set_charging_current "$TURBO_CURRENT"
-                else
-                    set_charging_current "$NORMAL_CURRENT"
-                fi
-            fi
-        fi
-        sleep "$INTERVAL" # Adjust the interval as needed
-    done
-}
-
-# Function to periodically check charger status and reload config if necessary
-check_charger_status() {
-    local previous_status=""
-    
-    while true; do
-        local current_status=$(cat "$CHARGER_STATUS_FILE" 2>/dev/null)
-        if [ -z "$current_status" ]; then
-            sleep 10
+        load_blazeboost_config
+        charger_status=$(cat "$CHARGER_STATUS_FILE" 2>/dev/null)
+        battery_temp=$(cat "$BATTERY_TEMP_FILE" 2>/dev/null)
+        
+        if [ -z "$charger_status" ] || [ -z "$battery_temp" ]; then
+            sleep "$INTERVAL"
             continue
         fi
         
-        if [ "$current_status" != "$previous_status" ]; then
-            previous_status="$current_status"
-            load_blazeboost_config
-            enable_blazeboost_charging "$current_status"
+        # Temperature throttling
+        if [ "$battery_temp" -ge "$TEMP_THRESHOLD" ]; then
+            set_charging_current "$NORMAL_CURRENT"
+            cooldown="true"
+            cooldown_start=$(date +%s)
+            sleep "$TEMP_DURATION"
+        else
+            if [ "$cooldown" = "true" ]; then
+                current_time=$(date +%s)
+                elapsed_time=$((current_time - cooldown_start))
+                if [ "$elapsed_time" -lt "$TEMP_DURATION" ]; then
+                    sleep "$INTERVAL"
+                    continue
+                fi
+                cooldown="false"
+            fi
+            set_current_based_on_mode "$charger_status"
         fi
-        sleep 10  # Check every 10 seconds, adjust as needed
+        sleep "$INTERVAL"
     done
 }
 
-# Handle termination signals
-trap "exit 0" SIGINT SIGTERM
-
-# Initial BlazeBoost charging enable
+# Initialize
 load_blazeboost_config
-charger_status=$(cat "$CHARGER_STATUS_FILE" 2>/dev/null)
-enable_blazeboost_charging "$charger_status"
+set_current_based_on_mode "$(cat "$CHARGER_STATUS_FILE" 2>/dev/null)"
 
-# Start maintaining charging current in the background
-maintain_charging_current &
-
-# Start checking charger status in the background
-check_charger_status &
-
-# End of script
+# Start main process
+maintain_charging
