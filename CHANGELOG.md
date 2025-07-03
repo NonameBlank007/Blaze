@@ -3,9 +3,16 @@
 Fast Charge Module
 Type: Module
 Support: Motorola G54 5G, G73 5G
-Build Version: 2.2.0
+Build Version: 2.2.5
 ```
 ## Chanagelog
+
+**2.2.5**
+- Remove duplicate BlazeBoost.sh
+- Add charge mode toggle through action
+- Auto generate config file, Now ```config.txt``` -> ```blzeboost.prop```
+- Fix uninstall
+- Add custom toggle script for action to execute
 
 **2.2.0**
 - Remove unused files
