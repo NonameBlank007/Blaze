@@ -37,7 +37,13 @@ else
 fi
 
 # File paths
-CHARGER_STATUS_FILE="/sys/class/power_supply/primary_chg/online"
+if [ -f /sys/class/power_supply/primary_chg/online ]; then
+    CHARGER_STATUS_FILE="/sys/class/power_supply/primary_chg/online"
+elif [ -f /sys/class/power_supply/11b20000.i2c:mt6375@34:chg/online ]; then
+    CHARGER_STATUS_FILE="/sys/class/power_supply/11b20000.i2c:mt6375@34:chg/online"
+else
+    exit 1
+fi
 BATTERY_TEMP_FILE="/sys/class/power_supply/battery/temp"
 CONFIG_FILE="/storage/emulated/0/blazeboost.prop"
 
