@@ -3,8 +3,8 @@
 # BlazeBoost Charging Script for /data/adb/service.d
 # This script enables BlazeBoost charging and monitors for charging events and temperature.
 # Created by Noname_Blank
-# Version: 2.2.5
-# Build: 01:07:2025 10:15PM
+# Version: 2.3.0
+# Build: 23:05:2026 12:05PM
 
 # Lock file management
 LOCK_FILE="/data/adb/blazeboost.lock"
@@ -77,11 +77,11 @@ set_charging_current() {
 
 # Set current based on mode
 set_current_based_on_mode() {
-    status=$1
+    charger_status=$1
     if [ "$MODE" = "night" ]; then
         set_charging_current "$NORMAL_CURRENT"
     else
-        if [ "$status" -eq 2 ]; then
+        if [ "$charger_status" -eq 2 ]; then
             set_charging_current "$TURBO_CURRENT"
         else
             set_charging_current "$NORMAL_CURRENT"
@@ -89,41 +89,22 @@ set_current_based_on_mode() {
     fi
 }
 
-# Main charging loop
+# Main charging function
 maintain_charging() {
-    cooldown="false"
-    cooldown_start=0
-    
-    while true; do
-        load_blazeboost_config
-        charger_status=$(cat "$CHARGER_STATUS_FILE" 2>/dev/null)
-        battery_temp=$(cat "$BATTERY_TEMP_FILE" 2>/dev/null)
-        
-        if [ -z "$charger_status" ] || [ -z "$battery_temp" ]; then
-            sleep "$INTERVAL"
-            continue
-        fi
-        
-        # Temperature throttling
-        if [ "$battery_temp" -ge "$TEMP_THRESHOLD" ]; then
-            set_charging_current "$NORMAL_CURRENT"
-            cooldown="true"
-            cooldown_start=$(date +%s)
-            sleep "$TEMP_DURATION"
-        else
-            if [ "$cooldown" = "true" ]; then
-                current_time=$(date +%s)
-                elapsed_time=$((current_time - cooldown_start))
-                if [ "$elapsed_time" -lt "$TEMP_DURATION" ]; then
-                    sleep "$INTERVAL"
-                    continue
-                fi
-                cooldown="false"
-            fi
-            set_current_based_on_mode "$charger_status"
-        fi
-        sleep "$INTERVAL"
-    done
+    load_blazeboost_config
+    charger_status=$(cat "$CHARGER_STATUS_FILE" 2>/dev/null)
+    battery_temp=$(cat "$BATTERY_TEMP_FILE" 2>/dev/null)
+
+    if [ -z "$charger_status" ] || [ -z "$battery_temp" ]; then
+        return
+    fi
+
+    if [ "$battery_temp" -ge "$TEMP_THRESHOLD" ]; then
+        set_charging_current "$NORMAL_CURRENT"
+        sleep "$TEMP_DURATION"
+    else
+        set_current_based_on_mode "$charger_status"
+    fi
 }
 
 # Initialize
@@ -131,4 +112,14 @@ load_blazeboost_config
 set_current_based_on_mode "$(cat "$CHARGER_STATUS_FILE" 2>/dev/null)"
 
 # Start main process
-maintain_charging
+while true; do
+    charger_status=$(cat "$CHARGER_STATUS_FILE" 2>/dev/null)
+
+    if [ "$charger_status" -eq 2 ]; then
+        maintain_charging
+    else
+        echo "Charger not connected. Waiting..."
+    fi
+
+    sleep "$INTERVAL"
+done
