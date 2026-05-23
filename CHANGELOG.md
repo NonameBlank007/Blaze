@@ -3,9 +3,17 @@
 Fast Charge Module
 Type: Module
 Support: Motorola G54 5G, G73 5G
-Build Version: 2.2.5
+Build Version: 2.3.0
 ```
 ## Chanagelog
+
+**2.3.0**
+- Change action dialouges and revamp restart in custom.sh
+- Prevent instant close of dialouge in KSU and it's like
+- Add few permision handlers
+- Revamp temprature control and loop logic
+  - Less CPU & I/O usage and better temprature
+- Revamp uninstall.sh
 
 **2.2.5**
 - Remove duplicate BlazeBoost.sh
