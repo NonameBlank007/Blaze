@@ -215,6 +215,9 @@ set_permissions() {
   # Magisk
   if [ -d /data/adb ]; then
       set_perm /data/adb/service.d/BlazeBoost.sh 0 0 0755
+      set_perm $MODPATH/service.sh 0 0 0755
+      set_perm $MODPATH/action.sh 0 0 0755
+      set_perm $MODPATH/custom.sh 0 0 0755
   fi
 
   sleep 1
