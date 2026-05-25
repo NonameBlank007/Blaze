@@ -5,3 +5,4 @@ versionCode=202605024
 author=Noname_Blank
 banner=banner.png
 description=Enables Turbo charge Mode Support With Temprature Control
+updateJson=https://raw.githubusercontent.com/NonameBlank007/Blaze/master/update.json
