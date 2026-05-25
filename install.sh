@@ -128,6 +128,7 @@ on_install(){
       cp -af $TMPDIR/BlazeBoost.sh /data/adb/service.d/BlazeBoost.sh
       cp -af $TMPDIR/action.sh $MODPATH/action.sh 
       cp -af $TMPDIR/custom.sh $MODPATH/custom.sh
+      cp -af $TMPDIR/banner.png $MODPATH/banner.png
   fi
 }
 
