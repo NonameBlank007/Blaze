@@ -1,8 +1,10 @@
 # Build Status
 ```
 Fast Charge Module
+Name: Blaze
 Type: Module
 Support: Motorola G54 5G, G73 5G
+Build Name: Kurumi
 Build Version: 2.3.0
 ```
 ## Chanagelog
