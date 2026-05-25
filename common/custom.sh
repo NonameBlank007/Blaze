@@ -42,7 +42,12 @@ if grep -q "MODE=\"night\"" "$CONFIG_FILE" 2>/dev/null; then
     echo "- Charging Speed are now set to Turbo Mode 21w+"
 else
     if [ ! -f "$CONFIG_FILE" ]; then
-        echo 'MODE="night"' > "$CONFIG_FILE"
+        echo 'NORMAL_CURRENT="3000000"' > "$CONFIG_FILE"
+        echo 'TURBO_CURRENT="5000000"' >> "$CONFIG_FILE"
+        echo 'TEMP_THRESHOLD=430' >> "$CONFIG_FILE"
+        echo 'TEMP_DURATION=30' >> "$CONFIG_FILE"
+        echo 'INTERVAL=15' >> "$CONFIG_FILE"
+        echo 'MODE="night"' >> "$CONFIG_FILE"
     elif grep -q "MODE=" "$CONFIG_FILE" 2>/dev/null; then
         sed -i 's/MODE=".*"/MODE="night"/' "$CONFIG_FILE"
     else
