@@ -1,10 +1,15 @@
 MODDIR=${0%/*}
 
+# Check if power is connected
+CHECK_RUNNING=$(cat "/sys/class/power_supply/primary_chg/online" 2>/dev/null)
+
 # Set Standalone for ASH busybox
 set +o standalone
 unset ASH_STANDALONE
 
-if ! sh $MODDIR/custom.sh; then
+if [ "$CHECK_RUNNING" -eq 2 ] || ! sh $MODDIR/custom.sh; then
+   echo -e "Charger connected or custom not found"
+   echo -e "Run again after charger disconnection or report to devloper"
    exit 1
 fi
 
