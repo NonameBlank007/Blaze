@@ -7,9 +7,17 @@ CHECK_RUNNING=$(cat "/sys/class/power_supply/primary_chg/online" 2>/dev/null)
 set +o standalone
 unset ASH_STANDALONE
 
-if [ "$CHECK_RUNNING" -eq 2 ] || ! sh $MODDIR/custom.sh; then
-   echo -e "Charger connected or custom not found"
-   echo -e "Run again after charger disconnection or report to devloper"
+if [ "$CHECK_RUNNING" -eq 2 ]; then
+   echo -e "Charger connected"
+   echo -e "Verify working:"
+   echo -e "Step:- 1. Disconnect Charger"
+   echo -e "Step:- 2. Run action again"
+   echo -e "Step:- 3. Fails to run, Report to devloper"
+   exit 1
+fi
+
+if ! sh $MODDIR/custom.sh; then
+   echo -e "Action failed to run"
    exit 1
 fi
 
