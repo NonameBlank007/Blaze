@@ -3,11 +3,17 @@
 Fast Charge Module
 Name: Blaze
 Type: Module
-Support: Motorola G54 5G, G73 5G
-Build Name: Kurumi
-Build Version: 2.3.0
+Support: Motorola G54 5G, G64 5G, 73 5G
+Build Name: Rikka
+Build Version: 2.4.0
 ```
 ## Chanagelog
+
+**2.4.0**
+- OTA release
+- Banner Support for KSUN
+- Prevent creating only ```Mode``` blazeboost.prop
+- Add check for charger connection in action mode
 
 **2.3.0**
 - Change action dialouges and revamp restart in custom.sh
@@ -70,3 +76,4 @@ Build Version: 2.3.0
 
 **1.0.0**
 - Make a initial script, that runs on ExKernel or FKM by Inspiration of Ñîghtŵølf's version
+- Release as GPLV2-only
