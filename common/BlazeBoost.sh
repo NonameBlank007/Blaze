@@ -51,9 +51,12 @@ CONFIG_FILE="/storage/emulated/0/blazeboost.prop"
 DEFAULT_NORMAL_CURRENT="3000000"
 DEFAULT_TURBO_CURRENT="5000000"
 DEFAULT_TEMP_THRESHOLD=430
-DEFAULT_TEMP_DURATION=30
+DEFAULT_TEMP_HYSTERESIS=20
 DEFAULT_INTERVAL=15
 DEFAULT_MODE="default"
+
+# Thermal state
+THERMAL_LIMITED=0
 
 # Load configuration
 load_blazeboost_config() {
@@ -61,7 +64,7 @@ load_blazeboost_config() {
         echo "NORMAL_CURRENT=\"$DEFAULT_NORMAL_CURRENT\"" > "$CONFIG_FILE"
         echo "TURBO_CURRENT=\"$DEFAULT_TURBO_CURRENT\"" >> "$CONFIG_FILE"
         echo "TEMP_THRESHOLD=$DEFAULT_TEMP_THRESHOLD" >> "$CONFIG_FILE"
-        echo "TEMP_DURATION=$DEFAULT_TEMP_DURATION" >> "$CONFIG_FILE"
+        echo "TEMP_HYSTERESIS=$DEFAULT_TEMP_HYSTERESIS" >> "$CONFIG_FILE"
         echo "INTERVAL=$DEFAULT_INTERVAL" >> "$CONFIG_FILE"
         echo "MODE=\"$DEFAULT_MODE\"" >> "$CONFIG_FILE"
         chmod 0666 "$CONFIG_FILE"
@@ -71,7 +74,7 @@ load_blazeboost_config() {
     NORMAL_CURRENT="${NORMAL_CURRENT:-$DEFAULT_NORMAL_CURRENT}"
     TURBO_CURRENT="${TURBO_CURRENT:-$DEFAULT_TURBO_CURRENT}"
     TEMP_THRESHOLD="${TEMP_THRESHOLD:-$DEFAULT_TEMP_THRESHOLD}"
-    TEMP_DURATION="${TEMP_DURATION:-$DEFAULT_TEMP_DURATION}"
+    TEMP_HYSTERESIS="${TEMP_HYSTERESIS:-$DEFAULT_TEMP_HYSTERESIS}"
     INTERVAL="${INTERVAL:-$DEFAULT_INTERVAL}"
     MODE="${MODE:-$DEFAULT_MODE}"
 }
@@ -95,6 +98,17 @@ set_current_based_on_mode() {
     fi
 }
 
+# Update thermal hysteresis state
+update_thermal_state() {
+    battery_temp=$1
+
+    if [ "$battery_temp" -ge "$TEMP_THRESHOLD" ]; then
+        THERMAL_LIMITED=1
+    elif [ "$battery_temp" -le "$((TEMP_THRESHOLD - TEMP_HYSTERESIS))" ]; then
+        THERMAL_LIMITED=0
+    fi
+}
+
 # Main charging function
 maintain_charging() {
     load_blazeboost_config
@@ -105,9 +119,10 @@ maintain_charging() {
         return
     fi
 
-    if [ "$battery_temp" -ge "$TEMP_THRESHOLD" ]; then
+    update_thermal_state "$battery_temp"
+
+    if [ "$THERMAL_LIMITED" -eq 1 ]; then
         set_charging_current "$NORMAL_CURRENT"
-        sleep "$TEMP_DURATION"
     else
         set_current_based_on_mode "$charger_status"
     fi

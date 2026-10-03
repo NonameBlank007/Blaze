@@ -45,7 +45,7 @@ else
         echo 'NORMAL_CURRENT="3000000"' > "$CONFIG_FILE"
         echo 'TURBO_CURRENT="5000000"' >> "$CONFIG_FILE"
         echo 'TEMP_THRESHOLD=430' >> "$CONFIG_FILE"
-        echo 'TEMP_DURATION=30' >> "$CONFIG_FILE"
+        echo 'TEMP_HYSTERESIS=20' >> "$CONFIG_FILE"
         echo 'INTERVAL=15' >> "$CONFIG_FILE"
         echo 'MODE="night"' >> "$CONFIG_FILE"
     elif grep -q "MODE=" "$CONFIG_FILE" 2>/dev/null; then
