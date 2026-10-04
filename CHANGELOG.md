@@ -4,10 +4,16 @@ Fast Charge Module
 Name: Blaze
 Type: Module
 Support: Motorola G54 5G, G64 5G, 73 5G
-Build Name: Rikka
-Build Version: 2.4.0
+Build Name: Albedo
+Build Version: 2.5.0
 ```
 ## Chanagelog
+
+**2.5.0**
+- Better temprature control through `Hysteresis`
+  - Read usage in [Example](https://raw.githubusercontent.com/NonameBlank007/Blaze/master/example.blazeboost.prop) file on github
+- Depricate: Temprature cooldown duration in blazeboost.prop
+- Note: Remove old `blazeboost.prop` after updating to this module, before reboot to apply changes.
 
 **2.4.0**
 - OTA release
