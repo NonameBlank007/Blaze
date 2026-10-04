@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-2.4.0-8b5cf6?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-2.5.0-8b5cf6?style=for-the-badge)
 <img src="https://img.shields.io/badge/Magisk-v29+-00bcd4?style=for-the-badge&logo=magisk&logoColor=white" />
 <img src="https://img.shields.io/badge/KernelSU-v3.0+-4caf50?style=for-the-badge&logo=android&logoColor=white" />
 <img src="https://img.shields.io/badge/APatch-v10963+-ff9800?style=for-the-badge&logo=android&logoColor=white" />
